@@ -10,7 +10,7 @@ using TechNationAPI.Services;
 
 namespace WebApplication1.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/logs")]
     [ApiController]
     public class TechNationController : ControllerBase
     {
@@ -25,8 +25,7 @@ namespace WebApplication1.Controllers
             _mapper = mapper;
         }
 
-        //api/TechNation
-        [HttpPost]
+        [HttpPost("convert")]
         public async Task<ActionResult> ConvertLogAsync([FromBody] string minhaCdnLog)
         {
             try
@@ -51,9 +50,35 @@ namespace WebApplication1.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        //api/TechNation?minhaCdnLog
-        [HttpGet]
-        public async Task<ActionResult> ConvertLogURL(string minhaCdnLog)
+
+        [HttpGet("convert/{id}")]
+        public async Task<ActionResult> ConvertLogAsyncFromId(int id)
+        {
+            var log = await _logService.GetLogByIdAsync(id);
+
+            if (log == null)
+            {
+                return NotFound();
+            }
+            var minhaCdnLog = log.MinhaCdnLog ?? string.Empty;
+            try
+            {
+                if (!string.IsNullOrEmpty(minhaCdnLog))
+                {
+                    string agoraLog = _converter.Convert(minhaCdnLog);
+                    return Ok(agoraLog);
+                }
+
+                return NotFound("Informe o log pelo Id salvo no banco");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("convert")]
+        public async Task<ActionResult> ConvertLogFromQueryStringAsync([FromQuery] string minhaCdnLog)
         {
             try
             {
@@ -77,11 +102,11 @@ namespace WebApplication1.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        //api/TechNation/[id]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<CreateLogDto>> GetLog(int idLog)
+
+        [HttpGet("{id}", Name = "GetLogAsync")]
+        public async Task<ActionResult<CreateLogDto>> GetLogAsync(int id)
         {
-            var log = await _logService.GetLogByIdAsync(idLog);
+            var log = await _logService.GetLogByIdAsync(id);
 
             if (log == null)
             {
