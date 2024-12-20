@@ -75,15 +75,7 @@ namespace TechNationAPI.Services
             try
             {
                 var log = await _context.LogsTechNation.FirstOrDefaultAsync(t => t.Id == id);
-                if (log == null)
-                {
-                    throw new KeyNotFoundException("Log não encontrado.");
-                }
                 return log;
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return null;
             }
             catch (Exception ex)
             {
