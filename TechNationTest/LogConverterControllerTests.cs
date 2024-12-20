@@ -15,41 +15,57 @@ namespace TechNationTest
     public class LogConverterControllerTests
     {
         [Test]
-        public async Task ConvertLog_ValidLog_ReturnsOkResult()
+        public async Task ConvertLog_ValidLog_Chamada_ReturnsOkResult()
         {
             // Arrange
             var mockConverter = new Mock<ILogConverter>();
             mockConverter.Setup(c => c.Convert(It.IsAny<string>())).Returns("Converted Log");
             var mockLogService = new Mock<ILogService>();
             var mockMapper = new Mock<IMapper>();
+            var mockLogger = new Mock<IFileLogger>();
+            var mockConfiguration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
+
 
             var mockCreateLogDto = new CreateLogDto();
             mockMapper.Setup(m => m.Map<CreateLogDto>(It.IsAny<MinhaCdnLog>()))
                       .Returns(mockCreateLogDto);
 
-            var controller = new TechNationController(mockConverter.Object, mockLogService.Object, mockMapper.Object);
+            var controller = new TechNationController(mockConverter.Object, mockLogService.Object, mockMapper.Object, mockLogger.Object, mockConfiguration.Object);
+            ConvertLogRequest request = new ConvertLogRequest
+            {
+                MinhaCdnLog = "312|200|HIT|\\\"GET \\/robots.txt HTTP\\/1.1\\\"|100.2",
+                FormatoSaida = 0
+            };
+
 
             // Act
-            var result = await controller.ConvertLogAsync("312|200|HIT|\\\"GET \\/robots.txt HTTP\\/1.1\\\"|100.2") as OkObjectResult;
+            var result = await controller.ConvertLogAsync(request) as OkObjectResult;
 
             // Assert
             Assert.IsNotNull(result);
             Assert.That(result.StatusCode, Is.EqualTo(200));
-            Assert.That(result.Value, Is.EqualTo("Converted Log"));
+            Assert.That(result.Value, Is.EqualTo("Salvo no banco com sucesso log: Converted Log"));
         }
 
         [Test]
-        public async Task ConvertLog_InvalidLog_ReturnsBadRequest()
+        public async Task ConvertLog_InvalidLog_Chamada_ReturnsBadRequest()
         {
             // Arrange
             var mockConverter = new Mock<ILogConverter>();
             mockConverter.Setup(c => c.Convert(It.IsAny<string>())).Throws<FormatException>();
             var mockLogService = new Mock<ILogService>();
             var mockMapper = new Mock<IMapper>();
-            var controller = new TechNationController(mockConverter.Object, mockLogService.Object, mockMapper.Object);
+            var mockLogger = new Mock<IFileLogger>();
+            var mockConfiguration = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
+            var controller = new TechNationController(mockConverter.Object, mockLogService.Object, mockMapper.Object, mockLogger.Object, mockConfiguration.Object);
+            ConvertLogRequest request = new ConvertLogRequest
+            {
+                MinhaCdnLog = "Invalid log",
+                FormatoSaida = 0
+            };
 
             // Act
-            var result = await controller.ConvertLogAsync("Invalid log") as BadRequestObjectResult; 
+            var result = await controller.ConvertLogAsync(request) as BadRequestObjectResult;
 
             // Assert
             Assert.IsNotNull(result);

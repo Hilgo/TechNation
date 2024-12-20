@@ -1,0 +1,5 @@
+[20/12/2024 11:25:12] Log Minha CDN: 312|200|HIT|"GET /robots.txt HTTP/1.1"|100.2 - Log convertido: MINHA CDN GET 200 /robots.txt 100 312 HIT
+[20/12/2024 11:38:13] Log Minha CDN: 312|200|HIT|"GET /robots.txt HTTP/1.1"|100.2 - Log convertido: MINHA CDN GET 200 /robots.txt 100 312 HIT
+[20/12/2024 11:47:43] Log Minha CDN: 312|200|HIT|"GET /robots.txt HTTP/1.1"|100.2 - Log convertido: MINHA CDN GET 200 /robots.txt 100 312 HIT
+[20/12/2024 12:06:48] Log Minha CDN: 400|200|HIT|"GET /robots.txt HTTP/1.1"|100.2 - Log convertido: MINHA CDN GET 200 /robots.txt 100 400 HIT
+[20/12/2024 12:09:03] Log Minha CDN: 400|200|HIT|"GET /robots.txt HTTP/1.1"|100.2 - Log convertido: MINHA CDN GET 200 /robots.txt 100 400 HIT

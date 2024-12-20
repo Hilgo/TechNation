@@ -14,12 +14,8 @@ namespace TechNationAPI.Models
         public string Version { get; set; }
         public DateTime Date { get; set; }
         public string MinhaCdnLog { get; set; }
+        public string AgoraLog { get; set; }
     }
 
-    public enum CacheStatus
-    {
-        HIT,
-        MISS,
-        INVALIDATE
-    }
+    
 }

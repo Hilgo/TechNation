@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using TechNationAPI.Models;
 
 namespace TechNationAPI.Dtos
 {
@@ -8,6 +7,7 @@ namespace TechNationAPI.Dtos
     {
         [Required]
         public int ResponseSize { get; set; }
+        public int Id { get; set; }
         [Required]
         public CacheStatus CacheStatus { get; set; }
         [Required]
@@ -17,6 +17,7 @@ namespace TechNationAPI.Dtos
         public string Version { get; set; }
         public DateTime Date { get; set; }
         public string  MinhaCdnLog { get; set; }
+        public string AgoraLog { get; set; }
 
     }
 }

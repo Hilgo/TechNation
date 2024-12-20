@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using TechNationAPI.Converter;
 using TechNationAPI.Data;
 using TechNationAPI.Services;
 using UsuariosApi.Data;
 using AutoMapper;
 using TechNationAPI.Profiles;
+using System.IO;
 
 namespace WebApplication1
 {
@@ -39,6 +39,13 @@ namespace WebApplication1
 
             IMapper mapper = mappingConfig.CreateMapper();
             services.AddSingleton(mapper);
+
+            string logDirectory = Configuration.GetSection("FileLogging:LogDirectory").Value;
+            string logFileName = Configuration.GetSection("FileLogging:LogFileName").Value;
+
+            string logFilePath = Path.Combine(Directory.GetCurrentDirectory(), logDirectory, logFileName);
+
+            services.AddScoped<IFileLogger>(sp => new FileLogger(logFilePath));
 
         }
 
