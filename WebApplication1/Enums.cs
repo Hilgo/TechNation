@@ -4,7 +4,8 @@
     {
         HIT,
         MISS,
-        INVALIDATE
+        INVALIDATE,
+        REFRESH_HIT
     }
 
     public enum FormatoSaida { 

@@ -39,7 +39,7 @@ namespace TechNationTest
         }
 
         [Test]
-        public async Task ConvertLog_ValidLog_Chamada_ReturnsOkResult()
+        public async Task ConvertLog_ValidLog_ReturnsOkResult ()
         {
             // Arrange
             _mockConverter.Setup(c => c.Convert(It.IsAny<string>())).Returns("Converted Log");
@@ -79,6 +79,8 @@ namespace TechNationTest
             // Assert
             Assert.IsNotNull(result);
             Assert.That(result.StatusCode, Is.EqualTo(400));
+            Assert.That(result.Value, Is.EqualTo("One of the identified items was in an invalid format."));
+
         }
 
         [Test]
