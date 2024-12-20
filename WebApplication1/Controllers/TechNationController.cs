@@ -1,14 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using TechNationAPI;
 using TechNationAPI.Converter;
 using TechNationAPI.Dtos;
-using TechNationAPI.Migrations;
 using TechNationAPI.Services;
 
 namespace WebApplication1.Controllers
@@ -21,8 +19,8 @@ namespace WebApplication1.Controllers
         private readonly ILogService _logService;
         private readonly IMapper _mapper;
         private readonly IFileLogger _logger;
-        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
-
+        private readonly string _logDirectory;
+        private readonly string _logFileName;
 
         public TechNationController(ILogConverter converter,
             ILogService logService, IMapper mapper,
@@ -33,7 +31,8 @@ namespace WebApplication1.Controllers
             _logService = logService;
             _mapper = mapper;
             _logger = logger;
-            _configuration = configuration;
+            _logDirectory = configuration.GetSection("FileLogging:LogDirectory").Value;
+            _logFileName = configuration.GetSection("FileLogging:LogFileName").Value;
         }
 
         [HttpPost("convert")]
@@ -44,54 +43,11 @@ namespace WebApplication1.Controllers
 
             try
             {
-
-                string minhaCdnLog = request.MinhaCdnLog;
-                int formatoSaida = request.FormatoSaida;
-
-                if (!string.IsNullOrEmpty(minhaCdnLog))
-                {
-                    string agoraLog = _converter.Convert(minhaCdnLog);
-                    string mensagemRetorno = "";
-                    if (!string.IsNullOrEmpty(agoraLog))
-                    {
-
-                        var logAgora = MinhaCdnLog.ConverterCdnAgora(minhaCdnLog);
-
-                        if (formatoSaida == (int)FormatoSaida.RetornoChamada)
-                        {
-                            var logDto = _mapper.Map<CreateLogDto>(logAgora);
-                            logDto.MinhaCdnLog = minhaCdnLog;
-                            logDto.AgoraLog = agoraLog;
-                            var createdTask = await _logService.CreateLogAsync(logDto);
-                            mensagemRetorno = $"Salvo no banco com sucesso log: {agoraLog}";
-                        }
-                        else if (formatoSaida == (int)FormatoSaida.SalvarServidorComCaminho)
-                        {
-                            string logDirectory = _configuration.GetSection("FileLogging:LogDirectory").Value;
-                            string logFileName = _configuration.GetSection("FileLogging:LogFileName").Value;
-                            string logPath = Path.Combine(Directory.GetCurrentDirectory(), logDirectory, logFileName);
-
-                            _logger.Log($"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}");
-                            mensagemRetorno = $"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}. " +
-                                $" Log salvado com sucesso no caminho: {logPath}";
-
-                        }
-                        else
-                        {
-                            return BadRequest("Formato de saída inválido, informe o formato de saída válido: " +
-                                "0 - Retorno na chamada e salvar no banco ; " +
-                                "1 - Retorno do caminho do log salvo em arquivo de texto no servidor");
-                        }
-
-
-                    }
-                    return Ok(mensagemRetorno);
-                }
-
-                return NotFound("Informe o log pelo corpo da requisição");
+                return await ProcessLogConversion(request.MinhaCdnLog, request.FormatoSaida);
             }
             catch (Exception ex)
             {
+                _logger.Log($"Error converting log: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }
@@ -102,63 +58,18 @@ namespace WebApplication1.Controllers
             if (request == null)
                 return BadRequest("Informe o log pelo corpo da requisição");
 
-            int formatoSaida = request.FormatoSaida;
-            string requestMinhaCdnLog = request.MinhaCdnLog;
-            int id = request.Id;
-            string mensagemRetorno = "";
-
-            var log = await _logService.GetLogByIdAsync(id);
-
-            if (log == null)
-                return NotFound("Informe o log pelo Id salvo no banco");
-
-
-            var minhaCdnLog = log.MinhaCdnLog ?? string.Empty;
-
             try
             {
-                if (string.IsNullOrEmpty(requestMinhaCdnLog))
-                    requestMinhaCdnLog = log.MinhaCdnLog;
+                var log = await _logService.GetLogByIdAsync(request.Id);
+                if (log == null)
+                    return NotFound("Informe o log pelo Id salvo no banco");
 
-                if (!string.IsNullOrEmpty(requestMinhaCdnLog))
-                {
-                    string agoraLog = _converter.Convert(requestMinhaCdnLog);
-
-                    if (formatoSaida == (int)FormatoSaida.RetornoChamada)
-                    {
-                        var logAgora = MinhaCdnLog.ConverterCdnAgora(requestMinhaCdnLog);
-                        var logDto = _mapper.Map<CreateLogDto>(logAgora);
-                        logDto.MinhaCdnLog = requestMinhaCdnLog;
-                        logDto.AgoraLog = agoraLog;
-                        var createdTask = await _logService.UpdateLogAsync(id, logDto);
-                        mensagemRetorno = $"Log atualizado no banco de dados: {agoraLog}";
-
-                    }
-                    else if (formatoSaida == (int)FormatoSaida.SalvarServidorComCaminho)
-                    {
-                        string logDirectory = _configuration.GetSection("FileLogging:LogDirectory").Value;
-                        string logFileName = _configuration.GetSection("FileLogging:LogFileName").Value;
-                        string logPath = Path.Combine(Directory.GetCurrentDirectory(), logDirectory, logFileName);
-
-                        _logger.Log($"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}");
-                        mensagemRetorno = $"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}. " +
-                            $" Log salvado com sucesso no caminho: {logPath}";
-                    }
-                    else
-                    {
-                        return BadRequest("Formato de saída inválido, informe o formato de saída válido:" +
-                            "Id - Id do log salvo no banco de dados " +
-                            "0 - Retorno na chamada " +
-                            "1 - Retorno do caminho do log salvo em arquivo de texto no servidor");
-                    }
-
-                    return Ok(mensagemRetorno);
-                }
-
-                return NotFound("Informe o log pelo Id salvo no banco");
+                string minhaCdnLog = string.IsNullOrEmpty(request.MinhaCdnLog) ? log.MinhaCdnLog : request.MinhaCdnLog;
+                return await ProcessLogConversion(minhaCdnLog, request.FormatoSaida, request.Id);
             }
             catch (Exception ex)
             {
+                _logger.Log($"Error converting log from ID: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }
@@ -166,29 +77,16 @@ namespace WebApplication1.Controllers
         [HttpGet("convert")]
         public async Task<ActionResult> ConvertLogFromQueryStringAsync([FromQuery] string minhaCdnLog)
         {
-            string mensagemRetorno = "";
+            if (string.IsNullOrEmpty(minhaCdnLog))
+                return BadRequest("Informe o log pela URL: ?minhaCdnLog='Log Aqui'");
+
             try
             {
-                if (!string.IsNullOrEmpty(minhaCdnLog))
-                {
-                    string agoraLog = _converter.Convert(minhaCdnLog);
-                    if (!string.IsNullOrEmpty(agoraLog))
-                    {
-                        var cdnlog = MinhaCdnLog.ConverterCdnAgora(minhaCdnLog);
-                        var logDto = _mapper.Map<CreateLogDto>(cdnlog);
-                        logDto.MinhaCdnLog = minhaCdnLog;
-                        logDto.AgoraLog = agoraLog;
-                        var createdTask = await _logService.CreateLogAsync(logDto);
-                        mensagemRetorno = $"Salvo no banco com sucesso log: {agoraLog}";
-                        return Ok(mensagemRetorno);
-                    }
-                }
-                mensagemRetorno = "Informe o log pela URL: ?minhaCdnLog='Log Aqui'";
-
-                return NotFound(mensagemRetorno);
+                return await ProcessLogConversion(minhaCdnLog, (int)FormatoSaida.RetornoChamada);
             }
             catch (Exception ex)
             {
+                _logger.Log($"Error converting log from query string: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }
@@ -199,78 +97,86 @@ namespace WebApplication1.Controllers
             if (request == null)
                 return BadRequest("Informe o log pelo corpo da requisição");
 
-            string minhaCdnLog = request.MinhaCdnLog;
-
-            string mensagemRetorno = "";
-
             try
             {
-                if (string.IsNullOrEmpty(minhaCdnLog))
-                {
-                    return BadRequest("Informe o log pelo corpo da requisição");
-                }
-
-                string agoraLog = _converter.Convert(minhaCdnLog);
-                var logAgora = MinhaCdnLog.ConverterCdnAgora(minhaCdnLog);
-                var logDto = _mapper.Map<CreateLogDto>(logAgora);
-                logDto.MinhaCdnLog = minhaCdnLog;
-                logDto.AgoraLog = agoraLog;
-                var createdTask = await _logService.CreateLogAsync(logDto);
-                mensagemRetorno = $"Salvo no banco com sucesso log: {agoraLog}";
-
-                return Ok(mensagemRetorno);
+                return await ProcessLogConversion(request.MinhaCdnLog, (int)FormatoSaida.RetornoChamada);
             }
             catch (Exception ex)
             {
+                _logger.Log($"Error saving log: {ex.Message}");
                 return BadRequest(ex.Message);
             }
-
         }
 
         [HttpGet("{id}", Name = "GetLogAsync")]
         public async Task<ActionResult<CreateLogDto>> GetLogAsync(int id)
         {
             var log = await _logService.GetLogByIdAsync(id);
-
             if (log == null)
-            {
                 return NotFound();
-            }
 
             var logDto = _mapper.Map<CreateLogDto>(log);
             return Ok(logDto);
         }
 
         [HttpGet("GetAllLogsDataBaseAsync")]
-        public async Task<ActionResult<CreateLogDto>> GetAllLogsDataBaseAsync()
+        public async Task<ActionResult<IEnumerable<CreateLogDto>>> GetAllLogsDataBaseAsync()
         {
             var logs = await _logService.GetAllLogsAsync();
-
             if (logs == null)
-            {
                 return NotFound();
-            }
 
             var logsDto = _mapper.Map<IEnumerable<CreateLogDto>>(logs);
             return Ok(logsDto);
         }
 
         [HttpGet("GetAllLogsFile")]
-        public ActionResult<CreateLogDto> GetAllLogsFile()
+        public ActionResult<IEnumerable<string>> GetAllLogsFile()
         {
-
-            string logDirectory = _configuration.GetSection("FileLogging:LogDirectory").Value;
-            string logFileName = _configuration.GetSection("FileLogging:LogFileName").Value;
-            string logPath = Path.Combine(Directory.GetCurrentDirectory(), logDirectory, logFileName);
-
+            string logPath = Path.Combine(Directory.GetCurrentDirectory(), _logDirectory, _logFileName);
             var logsFile = _logger.ReadLogFromFile(logPath);
-
             if (logsFile == null)
-            {
                 return NotFound();
-            }
 
             return Ok(logsFile);
+        }
+
+        private async Task<ActionResult> ProcessLogConversion(string minhaCdnLog, int formatoSaida, int? id = null)
+        {
+            if (string.IsNullOrEmpty(minhaCdnLog))
+                return BadRequest("Informe o log pelo corpo da requisição");
+
+            string agoraLog = _converter.Convert(minhaCdnLog);
+            if (string.IsNullOrEmpty(agoraLog))
+                return BadRequest("Erro ao converter o log");
+
+            var logAgora = MinhaCdnLog.ConverterCdnAgora(minhaCdnLog);
+            var logDto = _mapper.Map<CreateLogDto>(logAgora);
+            logDto.MinhaCdnLog = minhaCdnLog;
+            logDto.AgoraLog = agoraLog;
+
+            string mensagemRetorno;
+            if (formatoSaida == (int)FormatoSaida.RetornoChamada)
+            {
+                if (id.HasValue)
+                    await _logService.UpdateLogAsync(id.Value, logDto);
+                else
+                    await _logService.CreateLogAsync(logDto);
+
+                mensagemRetorno = $"Salvo no banco com sucesso log: {agoraLog}";
+            }
+            else if (formatoSaida == (int)FormatoSaida.SalvarServidorComCaminho)
+            {
+                string logPath = Path.Combine(Directory.GetCurrentDirectory(), _logDirectory, _logFileName);
+                _logger.Log($"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}");
+                mensagemRetorno = $"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}. Log salvado com sucesso no caminho: {logPath}";
+            }
+            else
+            {
+                return BadRequest("Formato de saída inválido, informe o formato de saída válido: 0 - Retorno na chamada e salvar no banco; 1 - Retorno do caminho do log salvo em arquivo de texto no servidor");
+            }
+
+            return Ok(mensagemRetorno);
         }
     }
 }
