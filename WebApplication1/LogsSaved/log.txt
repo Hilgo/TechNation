@@ -1,4 +1,4 @@
 [20/12/2024 14:17:18] Log Minha CDN: 312|200|HIT|"GET /robots.txt HTTP/1.1"|100.2 - Log convertido: MINHA CDN GET 200 /robots.txt 100 312 HIT
 [20/12/2024 14:17:46] Log Minha CDN: 101|200|MISS|"POST /myImages HTTP/1.1"|319.4 - Log convertido: MINHA CDN POST 200 /myImages 319 101 MISS
 [20/12/2024 14:18:03] Log Minha CDN: 199|404|MISS|"GET /not-found HTTP/1.1"|142.9 - Log convertido: MINHA CDN GET 404 /not-found 143 199 MISS
-[20/12/2024 14:21:45] Log Minha CDN: 312|200|INVALIDATE|"GET /robots.txt HTTP/1.1"|245.1 - Log convertido: MINHA CDN GET 200 /robots.txt 245 312 REFRESH_HIT
+[20/12/2024 14:21:45] Log Minha CDN: 312|200|INVALIDATE|"GET /robots.txt HTTP/1.1"|245.1 - Log convertido: MINHA CDN GET 200 /robots.txt 245 312 REFRESH_HIT[20/12/2024 14:50:32] Log Alterado: 9

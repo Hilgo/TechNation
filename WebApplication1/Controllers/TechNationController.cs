@@ -47,7 +47,7 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Log($"Error converting log: {ex.Message}");
+                await _logger.LogAsync($"Erro ao converter log: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }
@@ -69,7 +69,7 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Log($"Error converting log from ID: {ex.Message}");
+                await _logger.LogAsync($"Erro ao converter o log por Id: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }
@@ -86,7 +86,7 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Log($"Error converting log from query string: {ex.Message}");
+                await _logger.LogAsync($"Erro ao converter o log da requisição: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }
@@ -103,7 +103,7 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Log($"Error saving log: {ex.Message}");
+                await _logger.LogAsync($"Erro ao salvar log: {ex.Message}");
                 return BadRequest(ex.Message);
             }
         }
@@ -111,12 +111,22 @@ namespace WebApplication1.Controllers
         [HttpGet("{id}", Name = "GetLogAsync")]
         public async Task<ActionResult<CreateLogDto>> GetLogAsync(int id)
         {
-            var log = await _logService.GetLogByIdAsync(id);
-            if (log == null)
-                return NotFound();
+            try
+            {
+                var log = await _logService.GetLogByIdAsync(id);
+                if (log == null)
+                {
+                    return NotFound($"Log de Id {id} não encontrado.");
+                }
 
-            var logDto = _mapper.Map<CreateLogDto>(log);
-            return Ok(logDto);
+                var logDto = _mapper.Map<CreateLogDto>(log);
+                return Ok(logDto);
+            }
+            catch (Exception ex)
+            {
+                await _logger.LogAsync($"Erro ao recuperar log por ID: {ex.Message}");
+                return StatusCode(500, "Um erro ocorreu ao recuperar o log.");
+            }
         }
 
         [HttpGet("GetAllLogsDataBaseAsync")]
@@ -168,7 +178,7 @@ namespace WebApplication1.Controllers
             else if (formatoSaida == (int)FormatoSaida.SalvarServidorComCaminho)
             {
                 string logPath = Path.Combine(Directory.GetCurrentDirectory(), _logDirectory, _logFileName);
-                _logger.Log($"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}");
+                await _logger.LogAsync($"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}");
                 mensagemRetorno = $"Log Minha CDN: {minhaCdnLog} - Log convertido: {agoraLog}. Log salvado com sucesso no caminho: {logPath}";
             }
             else

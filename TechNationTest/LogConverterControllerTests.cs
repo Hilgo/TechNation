@@ -239,8 +239,8 @@ namespace TechNationTest
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
-            var notFoundResult = result.Result as NotFoundResult;
+            Assert.That(result.Result, Is.InstanceOf<NotFoundObjectResult>());
+            var notFoundResult = result.Result as NotFoundObjectResult;
             Assert.That(notFoundResult.StatusCode, Is.EqualTo(404));
         }
 

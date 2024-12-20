@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace TechNationAPI.Services
 {
@@ -11,22 +12,21 @@ namespace TechNationAPI.Services
         public FileLogger(string logFilePath)
         {
             _logFilePath = logFilePath;
-            // Crie o diretório de logs se ele não existir
             Directory.CreateDirectory(Path.GetDirectoryName(_logFilePath));
         }
 
-        public void Log(string message)
+        public async Task LogAsync(string message)
         {
             try
             {
                 using (StreamWriter writer = new StreamWriter(_logFilePath, true))
                 {
-                    writer.WriteLine($"[{DateTime.Now}] {message}");
+                    await writer.WriteLineAsync($"[{DateTime.Now}] {message}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao gravar no log: {ex.Message}");
+                Console.WriteLine($"Erro Ao escrever log: {ex.Message}");
             }
         }
 
